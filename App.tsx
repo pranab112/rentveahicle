@@ -1,229 +1,119 @@
-import React, { useState } from 'react';
-import { 
-  LayoutDashboard, 
-  Truck, 
-  CalendarDays, 
-  Store, 
-  ClipboardList, 
-  Bell,
-  Search,
-  Menu,
-  X
-} from 'lucide-react';
-import { FleetManager } from './components/FleetManager';
-import { BookingLog } from './components/BookingLog';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { TenantProvider } from './contexts/TenantContext';
+
+// Layouts
+import AdminLayout from './app/admin/layout';
+import HomePage from './app/page';
+import AdminDashboard from './app/admin/page';
+
+// Public Pages
+import VehicleListingPage from './app/vehicles/page';
+import VehicleDetailPage from './app/vehicles/detail';
+import BookingPage from './app/book/page';
+import BookingConfirmedPage from './app/booking-confirmed/page';
+
+// Admin Pages
+import AdminVehiclesPage from './app/admin/vehicles/page';
+import NewVehiclePage from './app/admin/vehicles/new';
+import EditVehiclePage from './app/admin/vehicles/edit';
+import AdminBookingsPage from './app/admin/bookings/page';
+import BookingDetailPage from './app/admin/bookings/detail';
+import AdminCalendarPage from './app/admin/calendar/page';
+import AdminSettingsPage from './app/admin/settings/page';
+
+// Legacy components adapted for the new router (Temporary until full page migration)
 import { Marketplace } from './components/Marketplace';
 import { RequestCenter } from './components/RequestCenter';
-import { CalendarView } from './components/CalendarView';
-import { Vehicle, Booking, VehicleRequest, RequestStatus, BookingStatus, VehicleType } from './types';
-import { analyzeFleetAvailability } from './services/geminiService';
 
-// MOCK DATA INITIALIZATION
-const MOCK_MY_VEHICLES: Vehicle[] = [
-  { id: '1', operatorId: 'me', make: 'Toyota', model: 'HiAce', plate: 'ABC-1234', type: VehicleType.VAN, imageUrl: 'https://picsum.photos/400/300?random=1', description: 'Reliable 14-seater van, perfect for group tours.' },
-  { id: '2', operatorId: 'me', make: 'Hyundai', model: 'Accent', plate: 'XYZ-9876', type: VehicleType.SEDAN, imageUrl: 'https://picsum.photos/400/300?random=2', description: 'Fuel efficient sedan for city transfers.' },
-];
+// Mock Data for legacy components
+import { Vehicle, Booking, VehicleType, BookingStatus } from './types';
 
 const MOCK_PARTNER_VEHICLES: Vehicle[] = [
   { id: 'p1', operatorId: 'partner_1', make: 'Ford', model: 'Transit', plate: 'PRT-111', type: VehicleType.VAN, imageUrl: 'https://picsum.photos/400/300?random=3', description: 'Partner vehicle: High roof spacious van.' },
-  { id: 'p2', operatorId: 'partner_2', make: 'Mercedes', model: 'Sprinter', plate: 'LUX-222', type: VehicleType.LUXURY, imageUrl: 'https://picsum.photos/400/300?random=4', description: 'Luxury transport for VIP clients.' },
 ];
 
-const MOCK_BOOKINGS: Booking[] = [
-  { id: 'b1', vehicleId: '1', customerName: 'John Doe', customerPhone: '555-0101', startDate: '2024-05-20', endDate: '2024-05-22', pickupLocation: 'Airport', dropLocation: 'Hotel', status: BookingStatus.CONFIRMED },
-];
+const PublicLayout = () => {
+  return (
+    <div className="flex flex-col min-h-screen">
+      <header className="border-b border-slate-200 bg-white sticky top-0 z-50">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2 font-bold text-xl text-indigo-600">
+            <span>FleetLink</span>
+          </div>
+          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
+             <a href="/" className="hover:text-indigo-600">Home</a>
+             <a href="/vehicles" className="hover:text-indigo-600">Vehicles</a>
+             <a href="/about" className="hover:text-indigo-600">About</a>
+          </nav>
+          <div className="flex items-center gap-4">
+             <a href="/login" className="text-sm font-medium text-slate-600 hover:text-slate-900">Operator Login</a>
+             <a href="/admin" className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 transition-colors">Book Now</a>
+          </div>
+        </div>
+      </header>
+      <main className="flex-1">
+        <Outlet />
+      </main>
+      <footer className="bg-white border-t border-slate-200 py-12">
+        <div className="container mx-auto px-4 text-center text-slate-500 text-sm">
+          © 2024 FleetLink. All rights reserved.
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+const MarketplaceWrapper = () => {
+  return <div className="space-y-6"><div><h2 className="text-2xl font-bold">Partner Network</h2></div><Marketplace partnerVehicles={MOCK_PARTNER_VEHICLES} onRequestVehicle={() => alert('Request sent!')} /></div>;
+}
 
 const App: React.FC = () => {
-  // STATE
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [myVehicles, setMyVehicles] = useState<Vehicle[]>(MOCK_MY_VEHICLES);
-  const [partnerVehicles] = useState<Vehicle[]>(MOCK_PARTNER_VEHICLES);
-  const [bookings, setBookings] = useState<Booking[]>(MOCK_BOOKINGS);
-  const [incomingRequests, setIncomingRequests] = useState<VehicleRequest[]>([
-    { id: 'r1', vehicleId: '1', requestingOperatorName: 'City Transport Co.', startDate: '2024-06-01', endDate: '2024-06-02', status: RequestStatus.PENDING }
-  ]);
-  const [outgoingRequests, setOutgoingRequests] = useState<VehicleRequest[]>([]);
-  const [aiInsight, setAiInsight] = useState<string>('');
-
-  // HANDLERS
-  const handleAddVehicle = (v: Vehicle) => setMyVehicles([...myVehicles, v]);
-  const handleRemoveVehicle = (id: string) => setMyVehicles(myVehicles.filter(v => v.id !== id));
-  
-  const handleAddBooking = (b: Booking) => setBookings([...bookings, b]);
-  const handleUpdateBookingStatus = (id: string, status: BookingStatus) => {
-    setBookings(bookings.map(b => b.id === id ? { ...b, status } : b));
-  };
-
-  const handleRequestVehicle = (vehicleId: string, vehicleDetails: string) => {
-    const newReq: VehicleRequest = {
-      id: Date.now().toString(),
-      vehicleId: vehicleDetails,
-      requestingOperatorName: 'Me',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date().toISOString().split('T')[0],
-      status: RequestStatus.PENDING
-    };
-    setOutgoingRequests([...outgoingRequests, newReq]);
-    alert('Request sent to partner!');
-  };
-
-  const handleIncomingRequest = (id: string, action: 'accept' | 'reject') => {
-    setIncomingRequests(incomingRequests.map(r => 
-      r.id === id ? { ...r, status: action === 'accept' ? RequestStatus.ACCEPTED : RequestStatus.REJECTED } : r
-    ));
-  };
-
-  const runAiAnalysis = async () => {
-    setAiInsight("Analyzing fleet status...");
-    const today = new Date().toISOString().split('T')[0];
-    const result = await analyzeFleetAvailability(myVehicles, today);
-    setAiInsight(result);
-  };
-
-  // NAVIGATION ITEMS
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'fleet', label: 'My Fleet', icon: Truck },
-    { id: 'calendar', label: 'Calendar', icon: CalendarDays },
-    { id: 'marketplace', label: 'Partner Network', icon: Store },
-    { id: 'bookings', label: 'Bookings', icon: ClipboardList },
-    { id: 'requests', label: 'Requests', icon: Bell, badge: incomingRequests.filter(r => r.status === RequestStatus.PENDING).length },
-  ];
-
   return (
-    <div className="min-h-screen flex bg-slate-50">
-      
-      {/* Sidebar - Desktop */}
-      <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 fixed h-full z-20">
-        <div className="p-6 border-b border-slate-100">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">FleetLink</h1>
-          <p className="text-xs text-slate-500 mt-1">Shared Inventory System</p>
-        </div>
-        <nav className="flex-1 p-4 space-y-1">
-          {navItems.map(item => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all ${
-                activeTab === item.id 
-                  ? 'bg-indigo-50 text-indigo-700 shadow-sm' 
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <item.icon size={20} />
-                {item.label}
-              </div>
-              {item.badge ? (
-                <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{item.badge}</span>
-              ) : null}
-            </button>
-          ))}
-        </nav>
-        <div className="p-4 border-t border-slate-100">
-          <div className="bg-slate-50 p-4 rounded-xl">
-             <p className="text-xs font-semibold text-slate-500 uppercase mb-2">AI Assistant</p>
-             <p className="text-xs text-slate-600 mb-3 italic">{aiInsight || "Ready to analyze."}</p>
-             <button onClick={runAiAnalysis} className="w-full bg-white border border-slate-200 text-slate-700 text-xs py-2 rounded-lg hover:bg-slate-100 flex items-center justify-center gap-1">
-               <Search size={12} /> Analyze Fleet
-             </button>
-          </div>
-        </div>
-      </aside>
+    <TenantProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public Routes */}
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/vehicles" element={<VehicleListingPage />} />
+            <Route path="/vehicles/:id" element={<VehicleDetailPage />} />
+            <Route path="/book/:vehicleId" element={<BookingPage />} />
+            <Route path="/booking-confirmed" element={<BookingConfirmedPage />} />
+            <Route path="/login" element={<div className="container mx-auto py-12 px-4 text-center">Login Page (Coming Soon)</div>} />
+          </Route>
 
-      {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 w-full bg-white border-b border-slate-200 z-30 px-4 py-3 flex justify-between items-center">
-        <span className="font-bold text-indigo-600">FleetLink</span>
-        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-slate-700">
-          {mobileMenuOpen ? <X /> : <Menu />}
-        </button>
-      </div>
-
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 bg-white z-20 pt-16 px-4 md:hidden">
-          <nav className="space-y-2">
-            {navItems.map(item => (
-              <button
-                key={item.id}
-                onClick={() => { setActiveTab(item.id); setMobileMenuOpen(false); }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium ${
-                  activeTab === item.id ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600'
-                }`}
-              >
-                <item.icon size={20} />
-                {item.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-      )}
-
-      {/* Main Content */}
-      <main className="flex-1 md:ml-64 p-4 md:p-8 pt-20 md:pt-8 max-w-7xl mx-auto w-full">
-        {activeTab === 'dashboard' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                 <p className="text-slate-500 text-xs font-medium uppercase">Total Fleet</p>
-                 <p className="text-3xl font-bold text-slate-800 mt-2">{myVehicles.length}</p>
-               </div>
-               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                 <p className="text-slate-500 text-xs font-medium uppercase">Active Bookings</p>
-                 <p className="text-3xl font-bold text-slate-800 mt-2">{bookings.filter(b => b.status === BookingStatus.CONFIRMED || b.status === BookingStatus.ONGOING).length}</p>
-               </div>
-               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                 <p className="text-slate-500 text-xs font-medium uppercase">Pending Req</p>
-                 <p className="text-3xl font-bold text-slate-800 mt-2">{incomingRequests.filter(r => r.status === RequestStatus.PENDING).length}</p>
-               </div>
-               <div className="bg-gradient-to-br from-indigo-500 to-violet-600 p-6 rounded-xl shadow-lg text-white">
-                 <p className="text-indigo-100 text-xs font-medium uppercase">Partner Network</p>
-                 <p className="text-3xl font-bold mt-2">{partnerVehicles.length} <span className="text-sm font-normal opacity-80">Vehicles Available</span></p>
-               </div>
-            </div>
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
             
-            <CalendarView vehicles={myVehicles} bookings={bookings} />
-          </div>
-        )}
+            {/* Vehicle Management Routes */}
+            <Route path="fleet" element={<AdminVehiclesPage />} /> 
+            <Route path="vehicles" element={<AdminVehiclesPage />} />
+            <Route path="vehicles/new" element={<NewVehiclePage />} />
+            <Route path="vehicles/:id" element={<EditVehiclePage />} />
 
-        {activeTab === 'fleet' && (
-          <FleetManager 
-            vehicles={myVehicles} 
-            onAddVehicle={handleAddVehicle} 
-            onRemoveVehicle={handleRemoveVehicle} 
-          />
-        )}
+            {/* Booking Management Routes */}
+            <Route path="bookings" element={<AdminBookingsPage />} />
+            <Route path="bookings/:id" element={<BookingDetailPage />} />
+            
+            {/* Calendar Route */}
+            <Route path="calendar" element={<AdminCalendarPage />} />
 
-        {activeTab === 'bookings' && (
-          <BookingLog 
-            bookings={bookings} 
-            vehicles={myVehicles} 
-            onUpdateStatus={handleUpdateBookingStatus}
-            onAddBooking={handleAddBooking}
-          />
-        )}
+            {/* Settings Route */}
+            <Route path="settings" element={<AdminSettingsPage />} />
 
-        {activeTab === 'marketplace' && (
-          <Marketplace 
-            partnerVehicles={partnerVehicles} 
-            onRequestVehicle={handleRequestVehicle} 
-          />
-        )}
+            <Route path="marketplace" element={<MarketplaceWrapper />} />
+            <Route path="requests" element={<RequestCenter incomingRequests={[]} outgoingRequests={[]} onHandleRequest={() => {}} />} />
+            
+            <Route path="customers" element={<div className="p-8 text-center text-slate-500">Customer Management Module</div>} />
+          </Route>
 
-        {activeTab === 'requests' && (
-          <RequestCenter 
-            incomingRequests={incomingRequests} 
-            outgoingRequests={outgoingRequests} 
-            onHandleRequest={handleIncomingRequest} 
-          />
-        )}
-
-        {activeTab === 'calendar' && (
-          <CalendarView vehicles={myVehicles} bookings={bookings} />
-        )}
-      </main>
-    </div>
+          {/* Catch all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </TenantProvider>
   );
 };
 

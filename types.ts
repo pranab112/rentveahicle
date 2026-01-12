@@ -7,6 +7,7 @@ export enum VehicleType {
 }
 
 export enum BookingStatus {
+  PENDING = 'Pending',
   CONFIRMED = 'Confirmed',
   ONGOING = 'Ongoing',
   COMPLETED = 'Completed',
@@ -19,28 +20,69 @@ export enum RequestStatus {
   REJECTED = 'Rejected'
 }
 
+export enum VehicleStatus {
+  ACTIVE = 'Active',
+  MAINTENANCE = 'Maintenance',
+  INACTIVE = 'Inactive'
+}
+
+export interface Tenant {
+  id: string;
+  name: string;
+  domain: string;
+  primaryColor: string;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  email?: string;
+  phone: string;
+  isVerified: boolean;
+  documents?: string[];
+  address?: string;
+}
+
 export interface Vehicle {
   id: string;
-  operatorId: string; // 'me' or 'partner_1', etc.
+  operatorId: string;
   make: string;
   model: string;
+  year?: number;
   plate: string;
   type: VehicleType;
+  status?: VehicleStatus;
   imageUrl: string;
-  photos?: string[]; // Optional array for multiple photos
+  photos?: string[];
   description: string;
+  dailyRate?: number;
+  features?: string[];
+  seats?: number;
+  transmission?: 'Automatic' | 'Manual';
+  fuelType?: 'Petrol' | 'Diesel' | 'Electric' | 'Hybrid';
 }
 
 export interface Booking {
   id: string;
   vehicleId: string;
+  customerId?: string;
   customerName: string;
   customerPhone: string;
-  startDate: string; // ISO String
-  endDate: string; // ISO String
+  customerEmail?: string;
+  startDate: string; // ISO Date String YYYY-MM-DD
+  endDate: string;   // ISO Date String YYYY-MM-DD
   pickupLocation: string;
   dropLocation: string;
+  pickupTime?: string;
   status: BookingStatus;
+  totalAmount?: number;
+  createdAt?: string;
+  specialRequests?: string;
+  paymentStatus?: 'Paid' | 'Unpaid' | 'Partial';
+  source?: 'Website' | 'Phone' | 'Walk-in';
+  deposit?: number;
+  discount?: number;
+  notes?: string;
 }
 
 export interface VehicleRequest {
@@ -57,4 +99,5 @@ export interface Operator {
   id: string;
   name: string;
   company: string;
+  email: string;
 }

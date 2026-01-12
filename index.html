@@ -7,8 +7,34 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-      body { font-family: 'Inter', sans-serif; }
-      /* Custom scrollbar for cleaner look */
+      :root {
+        --background: 210 40% 98%;
+        --foreground: 222.2 84% 4.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 222.2 84% 4.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 222.2 84% 4.9%;
+        --primary: 246 100% 60%; /* Indigo 600 */
+        --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96.1%;
+        --secondary-foreground: 222.2 47.4% 11.2%;
+        --muted: 210 40% 96.1%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --accent: 210 40% 96.1%;
+        --accent-foreground: 222.2 47.4% 11.2%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --ring: 246 100% 60%;
+        --radius: 0.75rem;
+      }
+      body { 
+        font-family: 'Inter', sans-serif; 
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+      }
+      /* Custom scrollbar */
       ::-webkit-scrollbar { width: 6px; height: 6px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
@@ -20,8 +46,18 @@
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
+    "react-router-dom": "https://esm.sh/react-router-dom@6.22.3",
     "@google/genai": "https://esm.sh/@google/genai@^1.35.0",
-    "lucide-react": "https://esm.sh/lucide-react@^0.562.0"
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "clsx": "https://esm.sh/clsx",
+    "tailwind-merge": "https://esm.sh/tailwind-merge",
+    "axios": "https://esm.sh/axios",
+    "date-fns": "https://esm.sh/date-fns",
+    "react-hook-form": "https://esm.sh/react-hook-form@7.51.0",
+    "zod": "https://esm.sh/zod@3.22.4",
+    "@hookform/resolvers/zod": "https://esm.sh/@hookform/resolvers@3.3.4/zod",
+    "@hookform/resolvers/": "https://esm.sh/@hookform/resolvers@^5.2.2/",
+    "swr": "https://esm.sh/swr@2.2.5"
   }
 }
 </script>

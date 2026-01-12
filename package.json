@@ -11,8 +11,17 @@
   "dependencies": {
     "react-dom": "^19.2.3",
     "react": "^19.2.3",
+    "react-router-dom": "6.22.3",
     "@google/genai": "^1.35.0",
-    "lucide-react": "^0.562.0"
+    "lucide-react": "^0.562.0",
+    "clsx": "latest",
+    "tailwind-merge": "latest",
+    "axios": "latest",
+    "date-fns": "latest",
+    "react-hook-form": "7.51.0",
+    "zod": "3.22.4",
+    "@hookform/resolvers": "^5.2.2",
+    "swr": "2.2.5"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
