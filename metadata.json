@@ -1,0 +1,5 @@
+{
+  "name": "FleetLink Shared Inventory",
+  "description": "A centralized shared inventory system for vehicle operators to manage fleets, view partner availability, and handle bookings in real-time.",
+  "requestFramePermissions": []
+}
